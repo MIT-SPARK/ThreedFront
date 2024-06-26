@@ -15,7 +15,7 @@ The optional floor plan preprocessing script converting images to points is adap
 Please refer to the <a href="./external_licenses/">external_licenses</a> directory for their licensing information. 
 
 ## Installation
-The following dependencies are required:
+We list dependency versions in `requirements.txt`. The following dependencies are required:
 - [numpy](https://numpy.org/doc/stable/user/install.html)
 - [pillow](https://pillow.readthedocs.io/en/stable/installation.html)
 - [pyrr](https://pyrr.readthedocs.io/en/latest/index.html)
