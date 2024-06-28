@@ -130,6 +130,7 @@ def main(argv):
         floor_plan, _, _ = get_floor_plan(
             ss, floor_texture, args.floor_color, with_room_mask=False
         )
+        renderables.append(floor_plan)
 
     if args.with_walls:
         for ei in ss.extras:
