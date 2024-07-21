@@ -13,7 +13,7 @@ from cleanfid import fid
 import pickle
 
 from threed_front.evaluation import ThreedFrontResults
-from utils import PROJ_DIR, create_or_clear_output_dir
+from utils import PROJ_DIR, create_or_clear_output_dir, update_render_paths
 
 
 def main(argv):
@@ -29,6 +29,12 @@ def main(argv):
         "--compute_kid",
         action="store_true",
         help="Compute KID instead of FID"
+    )
+    parser.add_argument(
+        "--dataset_directory",
+        default=None,
+        help="Path to dataset directory"
+        "(default: use train_dataset and test_dataset stored in result_file)"
     )
     parser.add_argument(
         "--synthesized_directory",
@@ -63,10 +69,12 @@ def main(argv):
     with open(args.result_file, "rb") as f:
         threed_front_results = pickle.load(f)
     assert isinstance(threed_front_results, ThreedFrontResults)
+    test_dataset = threed_front_results.test_dataset
     real_render_name = "rendered_scene{}_256{}.png".format(
         "_notexture" if args.no_texture else "", 
         "_nofloor" if not threed_front_results.floor_condition else ""
     )
+    update_render_paths(test_dataset, args.dataset_directory, real_render_name)
     
     # Default output directory
     if args.output_directory is None:
@@ -79,11 +87,8 @@ def main(argv):
     create_or_clear_output_dir(fid_fake_dir)
 
     # Copy ground-truth dataset images
-    test_dataset = threed_front_results.test_dataset
-    for i, real_render_path in enumerate(test_dataset._path_to_renders):
-        real_render_path = os.path.join(
-            os.path.dirname(real_render_path), real_render_name
-        )
+    for i in range(len(test_dataset)):
+        real_render_path = test_dataset._path_to_render(i)
         shutil.copy(real_render_path, "{}/{:05d}.png".format(fid_real_dir, i))
     num_test_scenes = len(test_dataset)
     print("Copied {} real images '{}' to {}".format(

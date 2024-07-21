@@ -33,8 +33,11 @@ def create_or_clear_output_dir(output_dir):
         os.makedirs(output_dir, exist_ok=True)
 
 
-def update_render_paths(dataset, new_base_dir, rendered_scene):
-    """Swich dataset base directory."""
-    dataset._path_to_renders = sorted([
-        os.path.join(new_base_dir, tag, rendered_scene) for tag in dataset._tags
-    ]) 
+def update_render_paths(dataset, new_base_dir=None, rendered_scene=None):
+    """Swich dataset base directory or rendered scene layout name."""
+    if new_base_dir is not None:
+        dataset._base_dir = new_base_dir
+    if rendered_scene is not None:
+        dataset._rendered_name = rendered_scene
+    assert os.path.exists(dataset._path_to_render(0)), \
+        "Path does not exist: {}".format(dataset._path_to_render(0))

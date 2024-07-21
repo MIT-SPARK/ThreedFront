@@ -109,11 +109,12 @@ def main(argv):
     # Access real images through processed dataset
     train_dataset_real = threed_front_results.train_dataset
     test_dataset_real = threed_front_results.test_dataset
-    if args.dataset_directory is not None:  # switch layout image paths
-        real_render_name = "rendered_scene_notexture_256.png" if args.no_texture\
-            else "rendered_scene_256.png"
-        update_render_paths(train_dataset_real, args.dataset_directory, real_render_name)
-        update_render_paths(test_dataset_real, args.dataset_directory, real_render_name)
+    real_render_name = "rendered_scene{}_256{}.png".format(
+        "_notexture" if args.no_texture else "", 
+        "_nofloor" if not threed_front_results.floor_condition else ""
+    )
+    update_render_paths(train_dataset_real, args.dataset_directory, real_render_name)
+    update_render_paths(test_dataset_real, args.dataset_directory, real_render_name)
 
     # Find all synthesized images
     if args.synthesized_directory is None:
