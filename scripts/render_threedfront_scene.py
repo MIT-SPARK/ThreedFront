@@ -38,7 +38,7 @@ def main(argv):
     parser.add_argument(
         "--output_directory",
         default=PROJ_DIR + "/output/scene/",
-        help="Path to output directory if needed (default: output//)"
+        help="Path to output directory if needed (default: output/scene/)"
     )
     parser.add_argument(
         "--without_screen",
@@ -88,7 +88,7 @@ def main(argv):
 
     args = parser.parse_args(argv)
 
-    # Load dataset (load from "PATH_TO_SCENES" directly if provided)
+    # Load dataset
     scenes = pickle.load(open(args.path_to_pickled_3d_front_dataset, "rb"))
     print("Loading full dataset with {} rooms".format(len(scenes)))
 

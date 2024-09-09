@@ -371,7 +371,7 @@ class Jitter(DatasetDecoratorBase):
 
 
 class Scale(DatasetDecoratorBase):
-    """Class to bound all features in self.bounds to -1 to +1."""
+    """Class to bound all features except objfeats in self.bounds to -1 to +1."""
     @staticmethod
     def scale(x, minimum, maximum):
         X = x.astype(np.float32)
@@ -411,6 +411,46 @@ class Scale(DatasetDecoratorBase):
 
 class Scale_CosinAngle(DatasetDecoratorBase):
     """Class to use [cos, sin] representation for angles, 
+    bound all other features except objfeats in self.bounds to -1 to +1."""
+    @staticmethod
+    def scale(x, minimum, maximum):
+        return Scale.scale(x, minimum, maximum)
+
+    @staticmethod
+    def descale(x, minimum, maximum):
+        return Scale.descale(x, minimum, maximum)
+
+    def __getitem__(self, idx):
+        bounds = self.bounds
+        sample_params = self._dataset[idx]
+        for k, v in sample_params.items():
+            if k == "angles":
+                # [cos, sin]
+                sample_params[k] = np.concatenate([np.cos(v), np.sin(v)], axis=-1)
+            elif k in bounds and k not in ["objfeats", "objfeats_32"]:
+                sample_params[k] = Scale.scale(v, bounds[k][0], bounds[k][1])
+        return sample_params
+
+    def post_process(self, s):
+        bounds = self.bounds
+        sample_params = {}
+        for k, v in s.items():
+            if k == "angles":
+                # theta = arctan2(sin, cos)
+                sample_params[k] = np.arctan2(v[:, :, 1:2], v[:, :, 0:1])
+            elif k in bounds and k not in ["objfeats", "objfeats_32"]:
+                sample_params[k] = Scale.descale(v, bounds[k][0], bounds[k][1])
+            else:
+                sample_params[k] = v
+        return super().post_process(sample_params)
+
+    @property
+    def bbox_dims(self):
+        return 3 + 3 + 2
+
+
+class Scale_CosinAngle_ObjfeatsNorm(DatasetDecoratorBase):
+    """Class to use [cos, sin] representation for angles, 
     bound all other features in self.bounds to -1 to +1."""
     @staticmethod
     def scale(x, minimum, maximum):
@@ -427,8 +467,6 @@ class Scale_CosinAngle(DatasetDecoratorBase):
             if k == "angles":
                 # [cos, sin]
                 sample_params[k] = np.concatenate([np.cos(v), np.sin(v)], axis=-1)
-            elif k in ["objfeats", "objfeats_32"]:
-                sample_params[k] = Scale.scale(v, bounds[k][1], bounds[k][2])
             elif k in bounds:
                 sample_params[k] = Scale.scale(v, bounds[k][0], bounds[k][1])
         return sample_params
@@ -439,9 +477,7 @@ class Scale_CosinAngle(DatasetDecoratorBase):
         for k, v in s.items():
             if k == "angles":
                 # theta = arctan2(sin, cos)
-                sample_params[k] = np.arctan2(v[:, :, 1:2], v[:, :, 0:1])    
-            elif k in ["objfeats", "objfeats_32"]:
-                sample_params[k] = Scale.descale(v, bounds[k][1], bounds[k][2])
+                sample_params[k] = np.arctan2(v[:, :, 1:2], v[:, :, 0:1])
             elif k in bounds:
                 sample_params[k] = Scale.descale(v, bounds[k][0], bounds[k][1])
             else:

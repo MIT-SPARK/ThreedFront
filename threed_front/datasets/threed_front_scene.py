@@ -586,10 +586,6 @@ class Room(BaseScene):
     def furniture_meshes(self):
         trimesh_meshes = []
         for furniture in self.bboxes:
-            # Load the furniture and scale it as it is given in the dataset
-            raw_mesh = TexturedMesh.from_file(furniture.raw_model_path)
-            raw_mesh.scale(furniture.scale)
-
             # Create a trimesh object for the same mesh in order to save
             # everything as a single scene
             tr_mesh = trimesh.load(furniture.raw_model_path, force="mesh")
