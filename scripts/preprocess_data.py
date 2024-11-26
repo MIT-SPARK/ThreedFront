@@ -92,17 +92,38 @@ def main(argv):
     room_type = args.dataset_filtering.split("_")[-1]
     print(f"Room type: {room_type}")
 
+    # Create the scene
+    scene_params = ORTHOGRAPHIC_PROJECTION_SCENE
+    if args.room_side is None:
+        scene_params["room_side"] = 3.1 if room_type in ["bedroom", "library"] \
+            else 6.1
+    else:
+        scene_params["room_side"] = args.room_side
+    if args.without_floor:
+        scene_params["background"] = (1, 1, 1, 1)
+    scene = scene_from_args(scene_params)
+    print("Room side:", scene_params["room_side"])
+
+    layout_image = "rendered_scene{}_{}{}.png".format(
+        "_notexture" if args.no_texture else "",
+        scene_params["window_size"][0],
+        "_nofloor" if args.without_floor else ""
+    )
+    print("Layout image name: {}".format(layout_image))
+
     # Check if output directory exists and if it doesn't create it
     args.output_directory = args.output_directory.format(room_type)
     if not os.path.exists(args.output_directory):
         os.makedirs(args.output_directory)
+        overwrite_subdirectory = 2
     elif len(os.listdir(args.output_directory)) > 0:
         print(f"Warning: a non-empty output directory {args.output_directory} exists.")
         overwrite_subdirectory = None
-        while overwrite_subdirectory not in {"y", "n"}:
+        while overwrite_subdirectory not in {"0", "1", "2"}:
             overwrite_subdirectory = \
-                input("Do you want to overwrite existing subdirectories? [y/n] ")
-
+                input("Do you want to overwrite existing subdirectories? "
+                      "[0. skip; 1. add/overwrite rendered images; 2. overwrite all.] ")
+    
     # Set floor texture/color (color has higher priority if args.no_texture)
     if args.without_floor:
         floor_color = None
@@ -116,28 +137,16 @@ def main(argv):
             [os.path.join(args.path_to_floor_plan_textures, fi)
                 for fi in os.listdir(args.path_to_floor_plan_textures)]
 
-    # Create the scene
-    scene_params = ORTHOGRAPHIC_PROJECTION_SCENE
-    if args.room_side is None:
-        scene_params["room_side"] = 3.1 if room_type in ["bedroom", "library"] \
-            else 6.1
-    else:
-        scene_params["room_side"] = args.room_side
-    if args.without_floor:
-        scene_params["background"] = (1, 1, 1, 1)
-    scene = scene_from_args(scene_params)
-    print("Room side:", scene_params["room_side"])
-
     config = {
         "filter_fn":                 args.dataset_filtering,
         "min_n_boxes":               -1,
         "max_n_boxes":               -1,
         "path_to_invalid_scene_ids":
-            os.path.join(args.path_to_dataset_files_directory, "invalid_threed_front_rooms.txt"),
+            f"{args.path_to_dataset_files_directory}/invalid_threed_front_rooms.txt",
         "path_to_invalid_bbox_jids": 
-            os.path.join(args.path_to_dataset_files_directory, "black_list.txt"),
+            f"{args.path_to_dataset_files_directory}/black_list.txt",
         "annotation_file": 
-            os.path.join(args.path_to_dataset_files_directory, f"{room_type}_threed_front_splits.csv")
+            f"{args.path_to_dataset_files_directory}/{room_type}_threed_front_splits.csv"
     }
 
     # Initially, we only consider the train split to compute the dataset
@@ -191,21 +200,13 @@ def main(argv):
 
     if args.no_texture:
         color_palette = sns.color_palette('hls', dataset.n_object_types)
-
-    layout_image = "rendered_scene{}_{}{}.png".format(
-        "_notexture" if args.no_texture else "", 
-        scene_params["window_size"][0],
-        "_nofloor" if args.without_floor else ""
-    )
-    print("Saving layout images {} to each scene directory."\
-          .format(layout_image))
     
     for es, ss in tqdm(zip(encoded_dataset, dataset)):
         # Create a separate folder for each room
         room_directory = os.path.join(args.output_directory, ss.uid)
 
         # Skip existing room directory if the user does not want to overwrite
-        if os.path.exists(room_directory) and overwrite_subdirectory == "n":
+        if os.path.exists(room_directory) and overwrite_subdirectory == "0":
             continue
         else:
             os.makedirs(room_directory, exist_ok=True)
@@ -217,19 +218,18 @@ def main(argv):
         floor_plan_vertices, floor_plan_faces = ss.floor_plan
 
         # Render and save the room mask as an image
-        if (not args.without_floor):
+        if args.without_floor:
+            room_mask = None
+        else:
             room_mask = render_projection(
-                scene,
-                [get_floor_plan(ss)[0]],
-                (1.0, 1.0, 1.0),
-                "flat",
-                os.path.join(room_directory, "room_mask.png")
+                scene, [get_floor_plan(ss)[0]], (1.0, 1.0, 1.0), "flat",
+                None if overwrite_subdirectory == "1" else \
+                    os.path.join(room_directory, "room_mask.png")
             )[:, :, 0:1]
 
         # Save layout to boxes.npz
-        if not args.add_objfeats:
-            np.savez_compressed(
-                os.path.join(room_directory, "boxes"),
+        if overwrite_subdirectory == "2":
+            data_dict = dict(
                 uids=uids,
                 jids=jids,
                 scene_id=ss.scene_id,
@@ -245,25 +245,12 @@ def main(argv):
                 sizes=es["sizes"],
                 angles=es["angles"]
             )
-        else:
+            if args.add_objfeats:
+                data_dict.update(
+                    dict(objfeats=es["objfeats"], objfeats_32=es["objfeats_32"])
+                )
             np.savez_compressed(
-                os.path.join(room_directory, "boxes"),
-                uids=uids,
-                jids=jids,
-                scene_id=ss.scene_id,
-                scene_uid=ss.uid,
-                scene_type=ss.scene_type,
-                json_path=ss.json_path,
-                room_layout=room_mask,
-                floor_plan_vertices=floor_plan_vertices,
-                floor_plan_faces=floor_plan_faces,
-                floor_plan_centroid=ss.floor_plan_centroid,
-                class_labels=es["class_labels"],
-                translations=es["translations"],
-                sizes=es["sizes"],
-                angles=es["angles"],
-                objfeats=es["objfeats"],
-                objfeats_32=es["objfeats_32"],
+                os.path.join(room_directory, "boxes"), **data_dict
             )
 
         # Render a top-down orthographic projection of the room at a
@@ -282,14 +269,16 @@ def main(argv):
             renderables = get_textured_objects_in_scene(ss)
         
         # floor plan renderable
-        texture = np.random.choice(floor_textures)
-        floor_plan, _, _ = get_floor_plan(
-            ss, texture=texture, color=floor_color, 
-            with_trimesh=False, with_room_mask=False
-        )
+        if not args.without_floor:
+            texture = np.random.choice(floor_textures)
+            floor_plan, _, _ = get_floor_plan(
+                ss, texture=texture, color=floor_color, 
+                with_trimesh=False, with_room_mask=False
+            )
+            renderables.append(floor_plan)
 
         render_projection(
-            scene, renderables + [floor_plan], color=None, mode="shading",
+            scene, renderables, color=None, mode="shading",
             frame_path=path_to_image
         )
 

@@ -31,7 +31,7 @@ def get_raw_dataset(config, filter_fn=lambda s: s, path_to_bounds=None,
             config=config,
             scene_ids=split_scene_ids,
             include_edges=include_edges,
-            parse_room_layout=include_room_mask
+            parse_floor_plan=include_room_mask
         )
     else:
         dataset = ThreedFront.from_dataset_directory(

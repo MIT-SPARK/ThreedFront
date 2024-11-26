@@ -19,7 +19,7 @@ from simple_3dviz.behaviours.io import SaveGif
 
 from threed_front.simple_3dviz_setup import SIDEVIEW_SCENE
 from threed_front.rendering import get_floor_plan, export_scene
-from utils import PROJ_DIR, PATH_TO_PICKLED_3D_FRONT_DATASET, PATH_TO_FLOOR_PLAN_TEXTURES
+from utils import PROJ_DIR, PATH_TO_PICKLED_3D_FRONT_DATASET, PATH_TO_FLOOR_PLAN_TEXTURES, adjust_textured_mesh
 
 
 def main(argv):
@@ -107,7 +107,9 @@ def main(argv):
     # Build renderables
     renderables = ss.furniture_renderables(
         with_floor_plan_offset=True, with_texture=not args.without_texture)
-
+    for r in renderables:
+        adjust_textured_mesh(r)
+    
     if not args.without_floor:
         # use a single floor color for rendering without texture
         if args.without_texture:    

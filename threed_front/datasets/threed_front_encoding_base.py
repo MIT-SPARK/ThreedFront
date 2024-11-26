@@ -15,7 +15,7 @@ from .threed_front_scene import rotation_matrix_around_y
 
 
 class DatasetDecoratorBase(Dataset):
-    """A base class that helps us implement decorators for ThreeDFront-like
+    """A base class that helps us implement decorators for ThreedFront-like
     datasets."""
     def __init__(self, dataset):
         self._dataset = dataset
@@ -119,11 +119,9 @@ class ClassLabelsEncoder(BoxOrderedDataset):
 
         # Get the scene
         boxes = self._get_boxes(idx)
-        L = len(boxes)  # sequence length
-        C = len(classes)  # number of classes
-        class_labels = np.zeros((L, C), dtype=np.float32)
-        for i, bs in enumerate(boxes):
-            class_labels[i] = bs.one_hot_label(classes)
+        class_labels = np.array(
+            [bs.one_hot_label(classes) for bs in boxes], dtype=np.float32
+        )
         return class_labels
 
     @property

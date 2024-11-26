@@ -69,7 +69,7 @@ python scripts/preprocess_data.py threed_front_<room_type>
 ```
 By default, the results are saved to `output/3d_front_processed/<room_type>` with each sub-directory named as the UID of that scene.
 Note that texture (`--no_texture`) and floor plan (`--without_floor`) options will result in different rendered image names.
-This means you can run this script multiple times and save multiple layout images to each sub-directory by allowing overwriting when prompted.
+This means you can run this script multiple times and save multiple layout images to each sub-directory by allowing to overwrite when prompted (choose option 1 to save/overwrite rendered images without changing other files).
 If you want to use point cloud embeddings as an additional object feature, please refer to the [DiffuScene repository](https://github.com/tangjiapeng/DiffuScene/).
 
 ### (Optional) Sample floor plan boundary

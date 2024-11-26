@@ -256,7 +256,7 @@ class CachedRoom(object):
 
 class CachedThreedFront(ThreedFront):
     """Container for data paths after preprocessing."""
-    def __init__(self, base_dir, config, scene_ids, parse_room_layout=True,
+    def __init__(self, base_dir, config, scene_ids, parse_floor_plan=True,
                  rendered_name="rendered_scene_256.png", include_edges=False):
         self._base_dir = os.path.abspath(base_dir)
         self.config = config
@@ -283,7 +283,7 @@ class CachedThreedFront(ThreedFront):
             include_edges and os.path.isfile(self._path_to_room(0), "edges.npz")
         
         # Parse dataset
-        self._dataset_dict = self._parse_dataset_params(parse_room_layout)
+        self._dataset_dict = self._parse_dataset_params(parse_floor_plan)
         self._max_length = \
                 max(d["class_labels"].shape[0] for d in self._dataset_dict)
     
@@ -297,14 +297,14 @@ class CachedThreedFront(ThreedFront):
         return os.path.join(self._base_dir, self._tags[i], "edges.npz") \
             if self.contain_edges else None
     
-    def _parse_dataset_params(self, parse_room_layout=True):
+    def _parse_dataset_params(self, parse_floor_plan=True):
         dataset_dict = []
         for i in range(len(self._tags)):
-            data_dict = self._parse_room_params(i, parse_room_layout)
+            data_dict = self._parse_room_params(i, parse_floor_plan)
             dataset_dict.append(data_dict)
         return dataset_dict
     
-    def _parse_room_params(self, i, parse_room_layout=True):
+    def _parse_room_params(self, i, parse_floor_plan=True):
         D = np.load(self._path_to_room(i))
 
         # object features
@@ -323,7 +323,7 @@ class CachedThreedFront(ThreedFront):
             output_dict[ "fpbpn" ] = D["floor_plan_boundary_points_normals"]
         
         # room layout
-        if parse_room_layout:
+        if parse_floor_plan:
             room_rgb_2d = self.config.get('room_rgb_2d', False)
             if room_rgb_2d:
                 room = self._get_room_rgb_2d(self._path_to_render(i))
@@ -375,10 +375,11 @@ class CachedThreedFront(ThreedFront):
                 edge_index = np.empty((2, 0), dtype=E["on_edges"].dtype)
         else:
             edge_index = None
-
+        
         return CachedRoom(
             scene_id=D["scene_id"],
-            room_layout=self._get_room_layout(D["room_layout"]),
+            room_layout=self._get_room_layout(D["room_layout"]) \
+                if "room_layout" in D.keys() else None,
             floor_plan_vertices=D["floor_plan_vertices"],
             floor_plan_faces=D["floor_plan_faces"],
             floor_plan_centroid=D["floor_plan_centroid"],

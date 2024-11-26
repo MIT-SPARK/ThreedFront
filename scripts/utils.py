@@ -41,3 +41,9 @@ def update_render_paths(dataset, new_base_dir=None, rendered_scene=None):
         dataset._rendered_name = rendered_scene
     assert os.path.exists(dataset._path_to_render(0)), \
         "Path does not exist: {}".format(dataset._path_to_render(0))
+
+
+def adjust_textured_mesh(renderable, min=0.25, max=0.75):
+    """Adjust texture of the mesh to be in the range of [min, max]."""
+    renderable.material.ambient = (renderable.material.ambient - 0.5) * (max - min) + 0.5
+    renderable.material.diffuse = (renderable.material.diffuse - 0.5) * (max - min) + 0.5
