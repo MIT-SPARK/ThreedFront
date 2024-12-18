@@ -273,8 +273,8 @@ class CachedThreedFront(ThreedFront):
             self._rendered_name = rendered_name
         else:
             self._rendered_name = next(
-                (filename for filename in os.listdir(base_dir) 
-                 if filename.startswith("rendered_") and filename.endswith(".png")), 
+                (f for f in os.listdir(os.path.join(self._base_dir, self._tags[0])) 
+                 if f.startswith("rendered_") and f.endswith(".png")), 
                 None
             )
         
