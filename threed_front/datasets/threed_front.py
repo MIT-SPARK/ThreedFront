@@ -275,7 +275,7 @@ class CachedThreedFront(ThreedFront):
             self._rendered_name = next(
                 (f for f in os.listdir(os.path.join(self._base_dir, self._tags[0])) 
                  if f.startswith("rendered_") and f.endswith(".png")), 
-                None
+                "None.png"
             )
         
         # Paths to edge indices (False if include_edges=False or file does not extist)
