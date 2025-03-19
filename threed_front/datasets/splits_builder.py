@@ -36,7 +36,7 @@ class CSVSplitsBuilder(object):
                 self._splits[s] = [r[0] for r in data if r[1] == s]
         return self._splits
 
-    def get_splits(self, keep_splits=["train, val"]):
+    def get_splits(self, keep_splits=["train", "val"]):
         if not isinstance(keep_splits , list):
             keep_splits = [keep_splits]
         # Return only the split
